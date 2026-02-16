@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Model and run artifacts
+runs/
+backend/runs/
+!backend/runs/lander_baseline/
+!backend/runs/lander_baseline/.gitkeep
+videos/
+screenshots/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# Data
+models/**
+
+# Local env files
+.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# macOS
+.DS_Store

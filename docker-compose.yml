@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: autonomous-spacecraft-backend
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8200 --reload
+    environment:
+      MODEL_PATH: backend/runs/lander_baseline/ppo_lander_baseline.zip
+      RUNS_BASE_DIR: backend/runs/lander_baseline
+      CORS_ORIGINS: https://autonomous-spacecraft.demo.sparkup.local,https://autonomous-spacecraft.demo.sparkup.dev
+    volumes:
+      - .:/app
+      - backend-runs:/app/backend/runs
+    networks:
+      - app-network
+      - public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=public
+      - traefik.http.routers.autonomousspacecraft-api-local.rule=Host(`api-autonomous-spacecraft.demo.sparcup.local`) || Host(`api-autonomous-spacecraft.demo.sparkup.local`) || Host(`api-autonomousspacecraft.demo.sparcup.local`) || Host(`api-autonomousspacecraft.demo.sparkup.local`)
+      - traefik.http.routers.autonomousspacecraft-api-local.entrypoints=websecure
+      - traefik.http.routers.autonomousspacecraft-api-local.tls=true
+      - traefik.http.routers.autonomousspacecraft-api-local.priority=200
+      - traefik.http.routers.autonomousspacecraft-api-local-path.rule=(Host(`autonomous-spacecraft.demo.sparcup.local`) || Host(`autonomous-spacecraft.demo.sparkup.local`) || Host(`autonomousspacecraft.demo.sparcup.local`) || Host(`autonomousspacecraft.demo.sparkup.local`)) && PathPrefix(`/service`)
+      - traefik.http.routers.autonomousspacecraft-api-local-path.entrypoints=websecure
+      - traefik.http.routers.autonomousspacecraft-api-local-path.tls=true
+      - traefik.http.routers.autonomousspacecraft-api-local-path.priority=300
+      - traefik.http.routers.autonomousspacecraft-api-local-path.middlewares=autonomousspacecraft-strip-service
+      - traefik.http.middlewares.autonomousspacecraft-strip-service.stripprefix.prefixes=/service
+      - traefik.http.services.autonomousspacecraft-api-local.loadbalancer.server.port=8200
+
+  notebook:
+    build:
+      context: .
+      dockerfile: notebook/Dockerfile
+    container_name: autonomous-spacecraft-notebook
+    volumes:
+      - .:/app
+    ports:
+      - "8888:8888"
+    networks:
+      - app-network
+      - public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=public
+      - traefik.http.routers.autonomousspacecraft-notebook-local.rule=Host(`notebook-autonomous-spacecraft.demo.sparcup.local`) || Host(`notebook-autonomous-spacecraft.demo.sparkup.local`) || Host(`notebook-autonomousspacecraft.demo.sparcup.local`) || Host(`notebook-autonomousspacecraft.demo.sparkup.local`)
+      - traefik.http.routers.autonomousspacecraft-notebook-local.entrypoints=websecure
+      - traefik.http.routers.autonomousspacecraft-notebook-local.tls=true
+      - traefik.http.services.autonomousspacecraft-notebook-local.loadbalancer.server.port=8888
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: autonomous-spacecraft-frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    environment:
+      VITE_REPO_URL: https://github.com/sparkup/autonomous-spacecraft-rl
+      VITE_SPARKUP_PORTFOLIO_URL: https://www.sparkup.dev
+    networks:
+      - app-network
+      - public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=public
+      - traefik.http.routers.autonomousspacecraft-web-local.rule=Host(`autonomous-spacecraft.demo.sparcup.local`) || Host(`autonomous-spacecraft.demo.sparkup.local`) || Host(`autonomousspacecraft.demo.sparcup.local`) || Host(`autonomousspacecraft.demo.sparkup.local`)
+      - traefik.http.routers.autonomousspacecraft-web-local.entrypoints=websecure
+      - traefik.http.routers.autonomousspacecraft-web-local.tls=true
+      - traefik.http.routers.autonomousspacecraft-web-local.priority=100
+      - traefik.http.services.autonomousspacecraft-web-local.loadbalancer.server.port=5173
+      - traefik.http.routers.autonomousspacecraft-web-local-http.rule=Host(`autonomous-spacecraft.demo.sparcup.local`) || Host(`autonomous-spacecraft.demo.sparkup.local`) || Host(`autonomousspacecraft.demo.sparcup.local`) || Host(`autonomousspacecraft.demo.sparkup.local`)
+      - traefik.http.routers.autonomousspacecraft-web-local-http.entrypoints=web
+      - traefik.http.routers.autonomousspacecraft-web-local-http.priority=100
+      - traefik.http.routers.autonomousspacecraft-web-local-http.middlewares=autonomousspacecraft-redirect-to-https
+      - traefik.http.routers.autonomousspacecraft-web-local-http.service=noop@internal
+      - traefik.http.middlewares.autonomousspacecraft-redirect-to-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.autonomousspacecraft-redirect-to-https.redirectscheme.permanent=true
+
+networks:
+  app-network:
+    driver: bridge
+  public:
+    external: true
+
+volumes:
+  backend-runs:
+    name: autonomous-spacecraft-runs

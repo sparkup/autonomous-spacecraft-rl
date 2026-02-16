@@ -1,0 +1,43 @@
+[project]
+name = "autonomous-spacecraft-rl"
+version = "0.1.0"
+description = "Autonomous spacecraft reinforcement learning experiments"
+authors = [
+    { name = "David Worsley-Tonks", email = "david.worsley.tonks@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    # Notebook / visualization
+    "jupyterlab==4.2.5",
+    "ipykernel==6.29.5",
+    "jupyter_client==8.6.2",
+    "jupyter_server==2.14.2",
+    "pyzmq==25.1.2",
+    "tornado==6.4.2",
+    "httpx<0.28",
+    "matplotlib",
+    "seaborn",
+    "pandas",
+    "numpy",
+
+    # RL & environments
+    "gymnasium[all]",         # classic environments (CartPole, LunarLander, etc.)
+    "stable-baselines3",      # RL library (PPO, A2C, DQN, etc.)
+    "torch",                  # SB3 backend
+    "tensorboard",            # training logs
+
+    # API & interface (mission)
+    "fastapi",
+    "uvicorn[standard]",      # API server
+    "gradio",                 # simple UI
+    "streamlit",              # dashboard UI
+
+    # Monitoring & dashboard
+    "scikit-learn",           # metrics
+    "plotly",                 # interactive charts
+
+    # Misc
+    "requests",               # HTTP requests
+]
